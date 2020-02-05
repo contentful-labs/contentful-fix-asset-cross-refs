@@ -23,6 +23,7 @@
     "url": "https://github.com/contentful-labs/contentful-fix-asset-cross-refs.git"
   },
   "scripts": {
+    "prepare": "npm run build",
     "build": "tsc -b",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

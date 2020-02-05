@@ -37,7 +37,7 @@ export async function arrayFromAsyncIter<T>(iter: AsyncIterableIterator<T>): Pro
 
 export async function withTries<T>(n: number, fn: () => Promise<T> | T, { interval = 200 }: { interval?: number } = {}): Promise<T> {
   while (true) {
-    if (n <= 0) {
+    if (n <= 1) {
       return fn()
     } else {
       try {

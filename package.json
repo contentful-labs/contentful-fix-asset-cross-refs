@@ -16,7 +16,7 @@
     "typescript": "^3.7.5"
   },
   "bin": {
-    "contentful-fix-asset-cross-refs": "dist/bin/fix-asset-cross-refs.js"
+    "fix-asset-cross-refs": "bin/fix-asset-cross-refs"
   },
   "repository": {
     "type": "git",

@@ -3,6 +3,7 @@ import pino = require('pino')
 import { createClient as createCMAClient } from 'contentful-management'
 
 import { processAssets } from './lib/process-assets'
+import { CancellationToken } from './lib/cancellation-token'
 
 const yargsInst = yargs
   .help()
@@ -70,6 +71,10 @@ export async function run(argv = yargsInst.argv) {
   }) // to stderr
 
   const client = createCMAClient({ accessToken: argv.accessToken as string })
+  const cancelToken = new CancellationToken()
+
+  process.once('SIGTERM', () => cancelToken.cancel())
+  process.once('SIGINT', () => cancelToken.cancel())
 
   try {
     await processAssets({
@@ -80,9 +85,10 @@ export async function run(argv = yargsInst.argv) {
         forceRepublish: argv.forceRepublish as boolean,
         dryRun: argv.dryRun as boolean
       },
+      cancelToken,
       logger
     })
   } catch(err) {
-    logger.error('Error processing assets', { err })
+    logger.error({ err }, 'Error processing assets')
   }
 }

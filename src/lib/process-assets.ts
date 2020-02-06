@@ -5,6 +5,7 @@ import { Environment } from 'contentful-management/typings/environment'
 import { Asset } from 'contentful-management/typings/asset'
 import { Space } from 'contentful-management/typings/space'
 
+import { CancellationToken } from './cancellation-token'
 import { withTries, iteratePaginated, asyncMap, iterableToAsync } from './util'
 
 const URL_PATH_REGEXP = /^(https?:)?\/\/[^/]+\/([^/]+)\/([^/]+)\/[^/]+\/[^/]+$/i
@@ -99,11 +100,12 @@ interface ProcessEnvironmentAssetsResult {
 }
 
 export async function processEnvironmentAssets({
-  environment, logger, opts
+  environment, logger, cancelToken, opts
 }: {
   environment: Environment,
   logger: Logger,
-  opts: AssetProcessingOpts
+  opts: AssetProcessingOpts,
+  cancelToken: CancellationToken
 }): Promise<ProcessEnvironmentAssetsResult> {
   logger = logger.child({ envId: environment.sys.id })
   logger.info('Processing environment assets')
@@ -126,6 +128,7 @@ export async function processEnvironmentAssets({
       case 'updated-and-published':
         result.published.push(assetId)
     }
+    cancelToken.throwIfCancelled()
   }
 
   logger.info('Processing environment assets complete')
@@ -137,12 +140,13 @@ interface ProcessSpaceAssetsResult {
 }
 
 export async function processSpaceAssets({
-  space, envIds, logger, opts
+  space, envIds, logger, opts, cancelToken
 }: {
   space: Space,
   envIds?: string[],
   logger: Logger,
-  opts: AssetProcessingOpts
+  opts: AssetProcessingOpts,
+  cancelToken: CancellationToken
 }): Promise<ProcessSpaceAssetsResult> {
   logger = logger.child({ spaceId: space.sys.id })
   logger.info('Processing space assets')
@@ -164,7 +168,8 @@ export async function processSpaceAssets({
   const result: ProcessSpaceAssetsResult = {}
   for await (const environment of environments) {
     if (!environment) { continue }
-    result[environment.sys.id] = await processEnvironmentAssets({ environment, logger, opts })
+    result[environment.sys.id] = await processEnvironmentAssets({ environment, logger, opts, cancelToken })
+    cancelToken.throwIfCancelled()
   }
 
   logger.info('Processing space assets complete')
@@ -176,12 +181,13 @@ interface ProcessAssetsResult {
 }
 
 export async function processAssets({
-  client, spaceIds, envIds, opts, logger
+  client, spaceIds, envIds, opts, cancelToken, logger
 }: {
   client: ClientAPI,
   spaceIds?: string[],
   envIds?: string[],
   opts: AssetProcessingOpts,
+  cancelToken: CancellationToken,
   logger: Logger
 }): Promise<ProcessAssetsResult> {
   logger.info('Processing assets')
@@ -201,7 +207,8 @@ export async function processAssets({
   const result: ProcessAssetsResult = {}
   for await (const space of spaces) {
     if (!space) { continue }
-    result[space.sys.id] = await processSpaceAssets({ space, envIds, logger, opts })
+    result[space.sys.id] = await processSpaceAssets({ space, envIds, logger, opts, cancelToken })
+    cancelToken.throwIfCancelled()
   }
 
   logger.info('Processing assets complete')

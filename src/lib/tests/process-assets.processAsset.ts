@@ -1,6 +1,5 @@
 import test from 'ava'
 import * as pino from 'pino'
-import * as td from 'testdouble'
 
 import { processAsset } from '../process-assets'
 

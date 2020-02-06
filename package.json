@@ -13,12 +13,11 @@
     "@types/pino": "^5.15.4",
     "@types/yargs": "^15.0.3",
     "ava": "^3.2.0",
-    "testdouble": "^3.12.5",
     "ts-node": "^8.6.2",
     "typescript": "^3.7.5"
   },
   "bin": {
-    "fix-asset-cross-refs": "bin/fix-asset-cross-refs"
+    "contentful-fix-asset-cross-refs": "bin/fix-asset-cross-refs"
   },
   "repository": {
     "type": "git",
@@ -32,7 +31,11 @@
   "author": "Contentful <opensource@contentful.com>",
   "license": "MIT",
   "ava": {
-    "extensions": ["ts"],
-    "require": ["ts-node/register"]
+    "extensions": [
+      "ts"
+    ],
+    "require": [
+      "ts-node/register"
+    ]
   }
 }

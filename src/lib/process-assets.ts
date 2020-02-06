@@ -8,7 +8,7 @@ import { Space } from 'contentful-management/typings/space'
 import { withTries, iteratePaginated, asyncMap, iterableToAsync } from './util'
 
 const URL_PATH_REGEXP = /^(https?:)?\/\/[^/]+\/([^/]+)\/([^/]+)\/[^/]+\/[^/]+$/i
-function rewriteAssetUrls(asset: Asset, logger: Logger): string[] {
+export function rewriteAssetUrls(asset: Asset, logger: Logger): string[] {
   const rewrittenLocales: string[] = []
 
   for (const [locale, file] of Object.entries(asset.fields.file || {})) {
@@ -20,6 +20,7 @@ function rewriteAssetUrls(asset: Asset, logger: Logger): string[] {
     }
 
     const match = file.url.match(URL_PATH_REGEXP)
+    // This should not be possible, but better safe than sorry
     if (!match) {
       logger.warn({ locale, url: file.url }, 'Asset URL malformed for locale')
       continue
@@ -48,7 +49,7 @@ interface AssetProcessingOpts {
 
 type ProcessResult = 'no-change' | 'updated-only' | 'updated-and-published'
 
-async function processAsset({ asset, opts, logger }: { asset: Asset, opts: AssetProcessingOpts, logger: Logger }): Promise<ProcessResult> {
+export async function processAsset({ asset, opts, logger }: { asset: Asset, opts: AssetProcessingOpts, logger: Logger }): Promise<ProcessResult> {
   const { dryRun, forceRepublish } = opts
 
   logger.info({ dryRun, forceRepublish, isDraft: asset.isDraft(), isPublished: asset.isPublished(), isUpdated: asset.isUpdated() }, 'Processing asset')

@@ -10,11 +10,20 @@ interface Collection<T> {
   items: T[]
 }
 
+// Here be ( unnecessary, but kind of fun ) dragons:
+
+// All of this typing is to ensure/infer the correct typing through
+// `iteratePaginated` so that we don't need to rely on `any` or manually
+// specify types anywhere.
+
 type FunctionsOf<T, U extends Function> = { [K in keyof T]: T[K] extends U ? K : never }[keyof T];
 
-export async function * iteratePaginated<T, U extends FunctionsOf<T, (o: PaginationOpts) => Promise<Collection<any>>>>
-  (api: T, fnName: U, opts?: PaginationOpts): AsyncIterableIterator<T[U] extends (() => Promise<Collection<infer V>>) ? V : never> {
-  const limit = opts?.limit ?? 1000
+export async function * iteratePaginated<T, U extends FunctionsOf<T, (o: PaginationOpts) => Promise<Collection<any>>>> (
+  api: T,
+  fnName: U,
+  opts?: PaginationOpts
+): AsyncIterableIterator<T[U] extends (() => Promise<Collection<infer V>>) ? V : never> {
+  const limit = opts?.limit
   let skip = opts?.skip ?? 0
 
   while (true) {
@@ -25,14 +34,6 @@ export async function * iteratePaginated<T, U extends FunctionsOf<T, (o: Paginat
     yield * result.items
     skip = result.skip + result.items.length
   }
-}
-
-export async function arrayFromAsyncIter<T>(iter: AsyncIterableIterator<T>): Promise<T[]> {
-  const result: T[] = []
-  for await (const item of iter) {
-    result.push(item)
-  }
-  return result
 }
 
 export async function withTries<T>(n: number, fn: () => Promise<T> | T, { interval = 200 }: { interval?: number } = {}): Promise<T> {

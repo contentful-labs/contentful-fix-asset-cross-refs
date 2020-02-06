@@ -1,6 +1,6 @@
 import test from 'ava'
 
-import { withTries } from '../../util'
+import { withTries } from '../util'
 
 test('it throws the last error', async t => {
   let lastError

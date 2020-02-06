@@ -2,7 +2,7 @@ import * as yargs from 'yargs'
 import pino = require('pino')
 import { createClient as createCMAClient } from 'contentful-management'
 
-import { processAssets } from './lib/fixup'
+import { processAssets } from './lib/process-assets'
 
 const yargsInst = yargs
   .help()

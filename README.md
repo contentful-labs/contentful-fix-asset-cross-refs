@@ -114,3 +114,17 @@ to force-republish all assets regardless if other changes are pending, you
 can use the `--force-republish` flag.
 
 Assets that have never been published will never be published by this tool.
+
+### Prettier Output
+
+This tool logs using `pino`, which means you'll see log output as JSON. This
+is nice for documenting each step in the process, especially if you're running
+in verbose mode. If you'd like a bit prettier output, you can pipe the output
+to `pino-pretty`:
+
+```sh
+$ npm i -g pino-pretty
+... installs pino-pretty globally ...
+$ contentful-fix-asset-cross-refs <options> | pino-pretty
+... prettier log output! ...
+```

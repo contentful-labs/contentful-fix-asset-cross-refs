@@ -1,6 +1,6 @@
 {
   "name": "@contentful/fix-asset-cross-refs",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Tool to aid Contentful users in cleaning up cross-referencing asset urls",
   "main": "dist/bin/fix-asset-cross-refs.js",
   "dependencies": {

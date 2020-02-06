@@ -16,14 +16,6 @@ Node 10+, please.
 
 ## Installation & Basic Setup
 
-### Using `npx`
-
-The easiest way, if you have a relatively modern version of `npm`:
-
-```sh
-$ npx github:contentful-labs/contentful-fix-asset-cross-refs --help
-```
-
 ### Install Globally
 
 You can install this repository from Github:
@@ -55,12 +47,26 @@ Then run:
 $ node dist/bin/fix-asset-cross-refs.js <options>
 ```
 
+### Using `npx`
+
+The easiest way if you have a relatively modern version of `npm`, but not so
+fast if you'll call this multiple times:
+
+```sh
+$ npx github:contentful-labs/contentful-fix-asset-cross-refs <options>
+```
+
+
 ## Usage
 
 Quick start:
 
 ```sh
-$ npx github:contentful-labs/contentful-fix-asset-cross-refs --access-token <cma-access-token> --all-spaces --all-environments | tee capture-output.json
+$ npx github:contentful-labs/contentful-fix-asset-cross-refs \
+    --access-token <cma-access-token> \
+    --all-spaces \
+    --all-environments \
+    | tee capture-output.json
 ```
 
 We recommend `tee`ing the output to a file so you can inspect it later. If any
@@ -76,18 +82,19 @@ period to prevent any problems.
 The tool accepts a variety of flags:
 
 | Flag | Meaning |
-+------+---------+
+| ---- | ------- |
 | `--access-token <token>` | the access token to use (e.g. a CMA access token) |
 | `--spaces <space1> <space2> ...` | the list of space ids to process |
 | `--all-spaces` | alternately, process all spaces accessible by this access token |
-| `--environments <env1> <env2> | the list of environments to process |
+| `--environments <env1> <env2> ...` | the list of environments to process |
 | `--all-environments` | alternately, process all environments in the specified spaces |
 | `--force-republish` | publishes assets after updating even if they've otherwise drifted from the published version |
 | `--dry-run` | if set, won't actually perform any work, will merely pretend |
 | `--verbose` or `-v` | increase the logging verbosity (can be used up to two times) |
 
-`--all-spaces` or `--spaces` must be specified, but not both.
-`--all-environments` or `--environments` must be specified, but not both.
+Additionally,
+* `--all-spaces` or `--spaces` must be specified, but not both
+* `--all-environments` or `--environments` must be specified, but not both
 
 #### --dry-run
 

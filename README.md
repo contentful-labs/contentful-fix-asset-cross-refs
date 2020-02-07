@@ -6,7 +6,7 @@ Contentful previously allowed asset URLs to cross-reference other assets. This
 is no longer permissible going forward. All existing spaces have been allowed
 to continue cross-referencing assets for a transition period.
 
-This tool exists to automate the task of checking all assets in a space (or
+This tool exists to automate the task of updating all assets in a space (or
 spaces) to ensure that they are not cross-referencing other assets or other
 spaces.
 
@@ -24,7 +24,9 @@ You can install this repository from Github:
 $ npm i -g github:contentful-labs/contentful-fix-asset-cross-refs
 ```
 
-And, assuming global npm binaries are in your path, you should be able to run:
+This will download and build (compile from TypeScript to Javascript) the
+project.  Assuming global npm binaries are in your path, you should then be
+able to run:
 
 ```sh
 $ contentful-fix-asset-cross-refs <options>
@@ -44,38 +46,40 @@ $ make   # or npm install && npm run build if you don't have make installed
 Then run:
 
 ```sh
-$ node dist/bin/fix-asset-cross-refs.js <options>
+$ bin/fix-asset-cross-refs <options>
 ```
 
 ### Using `npx`
 
 The easiest way if you have a relatively modern version of `npm`, but not so
-fast if you'll call this multiple times:
+fast (because npx doesn't leave a copy installed) if you'll call this multiple
+times:
 
 ```sh
 $ npx github:contentful-labs/contentful-fix-asset-cross-refs <options>
 ```
-
 
 ## Usage
 
 Quick start:
 
 ```sh
-$ npx github:contentful-labs/contentful-fix-asset-cross-refs \
+$ contentful-fix-asset-cross-refs \
     --access-token <cma-access-token> \
     --all-spaces \
     --all-environments \
     | tee capture-output.json
 ```
 
-We recommend `tee`ing the output to a file so you can inspect it later. If any
-serious errors are encountered during processing, the program will immediately
-stop.
+We stronlgy recommend redirecting or `tee`ing the output to a file so you can
+inspect it later. If any serious errors (failure to update, failure to process
+an asset, or failure to publish) are encountered during processing, the program
+will immediately stop.
 
 **NOTE:** If other users are concurrently modifying your assets, this utility
 is likely to fail with a version mismatch. Please run this tool during a quiet
-period to prevent any problems.
+period to prevent any problems; it does not have retry logic for version
+mismatches.
 
 ### Options
 
@@ -100,18 +104,24 @@ Additionally,
 
 You may wish to ensure the behavior of the tool looks sane before running it
 over all of your data. You may do that by running with `--dry-run`. No data
-will be modified on the server. For a better look at every operation, you may
-increase the verbosity by running with `-v`.
+will be modified on the server, but the program will output the steps it
+would perform.
 
-#### --force-publish
+For a detailed list of every operation, you may increase the verbosity by
+running with `-v` or `-vv`.
+
+#### --force-republish
 
 **Be careful with this flag.**
 
-This tool will automatically republish assets after modifying them if and only
-if that asset has had no other changes. Otherwise, the tool will only update
-the draft version of the asset and leave all changes unpublished. If you'd like
-to force-republish all assets regardless if other changes are pending, you
-can use the `--force-republish` flag.
+This tool will automatically republish assets after modifying them *if and only
+if* that asset has no other pending changes than fixing the asset
+cross-references. Otherwise, those assets are fixed, but left in a draft
+state.
+
+If you'd like to force-republish all assets regardless of whether other changes
+are pending, you can use the `--force-republish` flag. **This might publish
+unintended changes, so be careful.**
 
 Assets that have never been published will never be published by this tool.
 

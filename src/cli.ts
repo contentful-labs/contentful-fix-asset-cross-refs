@@ -26,20 +26,31 @@ const yargsInst = yargs
   })
   .option('environments', {
     alias: 'e',
-    description: 'the environments to process',
+    describe: 'the environments to process',
     type: 'array',
     conflicts: 'all-environments'
   })
   .option('all-environments', {
     alias: 'E',
-    description: 'process assets in all environments',
+    describe: 'process assets in all environments',
     type: 'boolean',
     conflicts: 'environments',
   })
   .option('force-republish', {
-    description: 'force-republishes all modified assets, WARNING: even those that had previously unpublished changes',
+    describe: 'force-republishes all modified assets, WARNING: even those that had previously unpublished changes',
     type: 'boolean',
     default: false
+  })
+  .option('processing-attempts', {
+    describe: 'the number of times to attempt processing a given asset before giving up',
+    type: 'number',
+    default: 3,
+  })
+  .check(argv => {
+    if ((argv.processingAttempts as number) < 1) {
+      throw new Error('--processing-attempts must be >= 1')
+    }
+    return true
   })
   .option('dry-run', {
     description: 'runs in dry-run mode (no changes will be made)',
@@ -82,6 +93,7 @@ export async function run(argv = yargsInst.argv) {
       spaceIds: argv.spaces as string[] | undefined,
       envIds: argv.environments as string[] | undefined,
       opts: {
+        processingAttempts: argv.processingAttmepts as number,
         forceRepublish: argv.forceRepublish as boolean,
         dryRun: argv.dryRun as boolean
       },

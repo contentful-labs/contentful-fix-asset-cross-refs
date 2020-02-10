@@ -36,22 +36,19 @@ export async function * iteratePaginated<T, U extends FunctionsOf<T, (o: Paginat
   }
 }
 
-export async function withTries<T>(n: number, fn: () => Promise<T> | T, { interval = 200 }: { interval?: number } = {}): Promise<T> {
-  while (true) {
-    if (n <= 1) {
-      return fn()
-    } else {
-      try {
-        return await fn()
-      } catch(e) {
-        /* noop */
-      }
-      --n
-      if (interval > 0) {
-        await new Promise(resolve => setTimeout(resolve, interval))
-      }
+export async function withTries<T>(n: number, fn: (attemptNo: number) => Promise<T> | T, { interval = 200 }: { interval?: number } = {}): Promise<T> {
+  let i
+  for (i = 1; i < n; ++i) {
+    try {
+      return await fn(i)
+    } catch(e) {
+      /* noop */
+    }
+    if (interval > 0) {
+      await new Promise(resolve => setTimeout(resolve, interval))
     }
   }
+  return fn(i)
 }
 
 export async function * asyncMap<T, U>(iterable: Iterable<T>, fn: (item: T) => U | Promise<U>): AsyncIterableIterator<U> {

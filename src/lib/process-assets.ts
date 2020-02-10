@@ -44,6 +44,7 @@ export function rewriteAssetUrls(asset: Asset, logger: Logger): string[] {
 }
 
 interface AssetProcessingOpts {
+  processingAttempts: number
   forceRepublish: boolean
   dryRun: boolean
 }
@@ -65,14 +66,14 @@ export async function processAsset({ asset, opts, logger }: { asset: Asset, opts
     logger.debug({ updatedLocales }, 'Updating asset')
 
     result = 'updated-only'
-    asset = dryRun ? asset : await withTries(3, () => asset.update())
+    asset = dryRun ? asset : await withTries(2, () => asset.update())
     logger.debug('Updating draft asset complete')
     logger.trace({ asset }, 'Updated asset')
 
     for (const locale of updatedLocales) {
       logger.debug({ locale }, 'Processing locale')
       // Grabbing the new asset is necessary for publishing later
-      asset = dryRun ? asset : await withTries(3, () => asset.processForLocale(locale))
+      asset = dryRun ? asset : await withTries(2, () => asset.processForLocale(locale))
       logger.debug({ locale }, 'Processing locale complete')
       logger.trace({ asset }, 'Process locale output')
     }
@@ -80,7 +81,7 @@ export async function processAsset({ asset, opts, logger }: { asset: Asset, opts
     if (publishAfterUpdate) {
       result = 'updated-and-published'
       logger.debug('Publishing updated asset')
-      asset = dryRun ? asset : await withTries(3, () => asset.publish())
+      asset = dryRun ? asset : await withTries(2, () => asset.publish())
       logger.debug('Publishing asset complete')
       logger.trace({ asset }, 'Publish asset output')
     } else {
@@ -110,24 +111,30 @@ export async function processEnvironmentAssets({
   logger = logger.child({ envId: environment.sys.id })
   logger.info('Processing environment assets')
 
-  const result: ProcessEnvironmentAssetsResult = {
+  const result = {
     checked: [] as string[],
     updated: [] as string[],
     published: [] as string[],
   }
 
-  for await (const asset of iteratePaginated(environment, 'getAssets')) {
-    const assetId = asset.sys.id
-    const assetLogger = logger.child({ assetId: asset.sys.id })
-    const assetResult = await processAsset({ asset, opts, logger: assetLogger })
-    switch (assetResult) {
-      case 'no-change':
-        result.checked.push(assetId)
-      case 'updated-only':
-        result.updated.push(assetId)
-      case 'updated-and-published':
-        result.published.push(assetId)
-    }
+  for await (let asset of iteratePaginated(environment, 'getAssets')) {
+    await withTries(opts.processingAttempts, async n => {
+      const assetId = asset.sys.id
+      if (n > 1) {
+        // Reload the asset on retries
+        asset = await environment.getAsset(assetId)
+      }
+      const assetLogger = logger.child({ assetId: asset.sys.id })
+      const assetResult = await processAsset({ asset, opts, logger: assetLogger })
+      switch (assetResult) {
+        case 'no-change':
+          result.checked.push(assetId)
+        case 'updated-only':
+          result.updated.push(assetId)
+        case 'updated-and-published':
+          result.published.push(assetId)
+      }
+    })
     cancelToken.throwIfCancelled()
   }
 

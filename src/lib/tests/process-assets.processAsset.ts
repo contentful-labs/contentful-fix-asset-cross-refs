@@ -61,7 +61,7 @@ test('does not update assets that need no update', async t => {
     },
   })
 
-  await processAsset({ asset, opts: { forceRepublish: false, dryRun: false }, logger })
+  await processAsset({ asset, opts: { processingAttempts: 3, forceRepublish: false, dryRun: false }, logger })
   // no update
   t.is(asset.sys.version, 1)
 })
@@ -75,7 +75,7 @@ test('updating but not publishing an unpublished asset', async t => {
     },
   })
 
-  await processAsset({ asset, opts: { forceRepublish: false, dryRun: false }, logger })
+  await processAsset({ asset, opts: { processingAttempts: 3, forceRepublish: false, dryRun: false }, logger })
   t.is(asset.fields.file['en-US'].url, '//images.ctfassets.net/space/asset/nonce/file.png')
   t.false(asset.isPublished())
 })
@@ -94,7 +94,7 @@ test('publishing an updated asset with no pending changes and multiple locales',
     publishedVersion: 1
   })
 
-  await processAsset({ asset, opts: { forceRepublish: false, dryRun: false }, logger })
+  await processAsset({ asset, opts: { processingAttempts: 3, forceRepublish: false, dryRun: false }, logger })
   t.is(asset.fields.file['en-US'].url, '//images.ctfassets.net/space/asset/nonce/file.png')
   t.is(asset.fields.file['en-UK'].url, '//images.ctfassets.net/space/asset/nonce/file.png')
   t.true(asset.isPublished())
@@ -112,7 +112,7 @@ test('publishing an updated asset with no pending changes', async t => {
     publishedVersion: 1
   })
 
-  await processAsset({ asset, opts: { forceRepublish: false, dryRun: false }, logger })
+  await processAsset({ asset, opts: { processingAttempts: 3, forceRepublish: false, dryRun: false }, logger })
   t.is(asset.fields.file['en-US'].url, '//images.ctfassets.net/space/asset/nonce/file.png')
   t.true(asset.isPublished())
   t.false(asset.isUpdated())
@@ -129,7 +129,7 @@ test('updating but not publishing updated asset with pending changes', async t =
     publishedVersion: 1
   })
 
-  await processAsset({ asset, opts: { forceRepublish: false, dryRun: false }, logger })
+  await processAsset({ asset, opts: { processingAttempts: 3, forceRepublish: false, dryRun: false }, logger })
   t.is(asset.fields.file['en-US'].url, '//images.ctfassets.net/space/asset/nonce/file.png')
   t.is(asset.sys.publishedVersion, 1)
   t.true(asset.isUpdated())
@@ -146,7 +146,7 @@ test('updating and publishing an asset with pending changes when forceRepublish 
     publishedVersion: 1
   })
 
-  await processAsset({ asset, opts: { forceRepublish: true, dryRun: false }, logger })
+  await processAsset({ asset, opts: { processingAttempts: 3, forceRepublish: true, dryRun: false }, logger })
   t.is(asset.fields.file['en-US'].url, '//images.ctfassets.net/space/asset/nonce/file.png')
   t.false(asset.isUpdated())
   t.true(asset.isPublished())
@@ -162,7 +162,7 @@ test('not publishing an asset if unpublished but forcePublish is true', async t 
     version: 3,
   })
 
-  await processAsset({ asset, opts: { forceRepublish: true, dryRun: false }, logger })
+  await processAsset({ asset, opts: { processingAttempts: 3, forceRepublish: true, dryRun: false }, logger })
   t.is(asset.fields.file['en-US'].url, '//images.ctfassets.net/space/asset/nonce/file.png')
   t.false(asset.isPublished())
 })
@@ -178,7 +178,7 @@ test('does nothing when dryRun is true', async t => {
     publishedVersion: 2,
   })
 
-  await processAsset({ asset, opts: { forceRepublish: false, dryRun: true }, logger })
+  await processAsset({ asset, opts: { processingAttempts: 3, forceRepublish: false, dryRun: true }, logger })
   t.is(asset.sys.version, 1)
   t.is(asset.sys.publishedVersion, 2)
 })

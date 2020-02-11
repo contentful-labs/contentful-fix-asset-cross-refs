@@ -12,11 +12,19 @@ spaces.
 
 ## Requirements
 
-Node 10+, please.
+Node 10+, please. You can check your version by running:
+
+```sh
+$ node --version
+v12.14.1
+```
+
+If you have an older Node version, you will need to
+[install a later version](https://nodejs.org/en/).
 
 ## Installation & Basic Setup
 
-### Install Globally
+### Option 1: Install Globally
 
 You can install this repository from Github:
 
@@ -33,7 +41,7 @@ $ contentful-fix-asset-cross-refs <options>
 ```
 
 
-### Clone And Build
+### Option 2: Clone And Build
 
 You can clone this from source and run `make` to build it, and then execute:
 
@@ -49,7 +57,7 @@ Then run:
 $ bin/fix-asset-cross-refs <options>
 ```
 
-### Using `npx`
+### Option 3: Using `npx`
 
 The easiest way if you have a relatively modern version of `npm`, but not so
 fast (because npx doesn't leave a copy installed) if you'll call this multiple
@@ -63,18 +71,29 @@ $ npx github:contentful-labs/contentful-fix-asset-cross-refs <options>
 
 Quick start:
 
+First, fetch an existing CMA access token, or create a new one. (You can go to
+[the Contentful web app](https://app.contentful.com) and go to `Settings` ->
+`API Keys` -> `Content management tokens` to create a new token.)
+
+Then, run the tool:
+
 ```sh
 $ contentful-fix-asset-cross-refs \
     --access-token <cma-access-token> \
     --all-spaces \
     --all-environments \
+    --dry-run `# Remove after verifying output looks sane` \
+    -v        `# enable verbose output if you like` \
     | tee capture-output.json
 ```
 
-We stronlgy recommend redirecting or `tee`ing the output to a file so you can
-inspect it later. If any serious errors (failure to update, failure to process
-an asset, or failure to publish) are encountered during processing, the program
-will immediately stop.
+We **strongly recommend** redirecting or `tee`ing the tool output to a file so
+you can inspect it later. If any serious errors (failure to update, failure to
+process an asset, or failure to publish) are encountered during processing, the
+program will immediately stop.
+
+Once you are satisfied that the operations look sane, you can remove the
+`--dry-run` flag.
 
 **NOTE:** If other users are concurrently modifying your assets, this utility
 is likely to fail with a version mismatch. Please run this tool during a quiet
@@ -100,17 +119,20 @@ Additionally,
 * `--all-spaces` or `--spaces` must be specified, but not both
 * `--all-environments` or `--environments` must be specified, but not both
 
-#### --dry-run
+#### `--dry-run`
 
 You may wish to ensure the behavior of the tool looks sane before running it
 over all of your data. You may do that by running with `--dry-run`. No data
 will be modified on the server, but the program will output the steps it
 would perform.
 
+
+#### `--verbose` (or `-v`)
+
 For a detailed list of every operation, you may increase the verbosity by
 running with `-v` or `-vv`.
 
-#### --force-republish
+#### `--force-republish`
 
 **Be careful with this flag.**
 

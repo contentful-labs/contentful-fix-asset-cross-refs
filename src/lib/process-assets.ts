@@ -13,6 +13,10 @@ export function rewriteAssetUrls(asset: Asset, logger: Logger): string[] {
   const rewrittenLocales: string[] = []
 
   for (const [locale, file] of Object.entries(asset.fields.file || {})) {
+    if (!file) {
+      logger.trace({ locale }, 'File not set')
+      continue
+    }
     // Cannot be present, will result in an error
     delete file.details
     if (!file.url) {

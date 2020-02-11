@@ -53,7 +53,7 @@ const yargsInst = yargs
     return true
   })
   .option('dry-run', {
-    description: 'runs in dry-run mode (no changes will be made)',
+    describe: 'runs in dry-run mode (no changes will be made)',
     type: 'boolean',
     default: false
   })
@@ -66,8 +66,11 @@ const yargsInst = yargs
     }
     return true
   })
-  .count('verbose')
-  .alias('v', 'verbose')
+  .option('verbose', {
+    describe: 'verbosity level (set more than once for more verbose)',
+    count: true,
+    alias: 'v',
+  })
   .strict()
 
 export async function run(argv = yargsInst.argv) {

@@ -56,10 +56,13 @@ interface AssetProcessingOpts {
 type ProcessResult = 'no-change' | 'updated-only' | 'updated-and-published'
 
 export async function processAsset({ asset, opts, logger }: { asset: Asset, opts: AssetProcessingOpts, logger: Logger }): Promise<ProcessResult> {
-  const { dryRun, forceRepublish } = opts
+  if (asset.isArchived()) {
+    logger.info('Asset archived, not updating')
+    logger.trace({ asset }, 'Original asset')
+    return 'no-change'
+  }
 
-  logger.info({ dryRun, forceRepublish, isDraft: asset.isDraft(), isPublished: asset.isPublished(), isUpdated: asset.isUpdated() }, 'Processing asset')
-  logger.trace({ asset }, 'Original asset')
+  const { dryRun, forceRepublish } = opts
 
   const publishAfterUpdate = asset.isPublished() && (forceRepublish || !asset.isUpdated())
   const updatedLocales = rewriteAssetUrls(asset, logger)
@@ -67,7 +70,8 @@ export async function processAsset({ asset, opts, logger }: { asset: Asset, opts
 
   let result: ProcessResult = 'no-change'
   if (needsUpdate) {
-    logger.debug({ updatedLocales }, 'Updating asset')
+    logger.debug({ updatedLocales, isUpdated: asset.isUpdated(), isPublished: asset.isPublished() }, 'Asset has cross-referenced URLs and needs updating')
+    logger.trace({ asset }, 'Original asset')
 
     result = 'updated-only'
     asset = dryRun ? asset : await withTries(2, () => asset.update())
@@ -92,9 +96,9 @@ export async function processAsset({ asset, opts, logger }: { asset: Asset, opts
       logger.debug('Not publishing asset that has other unpublished changes')
     }
   } else {
-    logger.debug('Asset in correct state, update not required')
+    logger.info('Asset in correct state, update not required')
+    logger.trace({ asset }, 'Original asset')
   }
-  logger.info('Processing asset complete')
   return result
 }
 

@@ -89,7 +89,10 @@ export async function run(argv = yargsInst.argv) {
     level: logLevel,
   }) // to stderr
 
-  const client = createCMAClient({ accessToken: argv.accessToken as string })
+  const client = createCMAClient({
+    accessToken: argv.accessToken as string,
+    application: 'fix-asset-cross-refs'
+  })
   const cancelToken = new CancellationToken()
 
   process.once('SIGTERM', () => cancelToken.cancel())

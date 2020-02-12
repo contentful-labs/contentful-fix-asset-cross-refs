@@ -49,6 +49,7 @@ export function rewriteAssetUrls(asset: Asset, logger: Logger): string[] {
 
 interface AssetProcessingOpts {
   processingAttempts: number
+  processArchived: boolean
   forceRepublish: boolean
   dryRun: boolean
 }
@@ -56,48 +57,54 @@ interface AssetProcessingOpts {
 type ProcessResult = 'no-change' | 'updated-only' | 'updated-and-published'
 
 export async function processAsset({ asset, opts, logger }: { asset: Asset, opts: AssetProcessingOpts, logger: Logger }): Promise<ProcessResult> {
-  if (asset.isArchived()) {
-    logger.info('Asset archived, not updating')
-    logger.trace({ asset }, 'Original asset')
-    return 'no-change'
-  }
-
-  const { dryRun, forceRepublish } = opts
-
-  const publishAfterUpdate = asset.isPublished() && (forceRepublish || !asset.isUpdated())
-  const updatedLocales = rewriteAssetUrls(asset, logger)
-  const needsUpdate = updatedLocales.length > 0
+  logger.trace({ asset }, 'Processing asset')
+  const { dryRun, forceRepublish, processArchived } = opts
 
   let result: ProcessResult = 'no-change'
-  if (needsUpdate) {
-    logger.debug({ updatedLocales, isUpdated: asset.isUpdated(), isPublished: asset.isPublished() }, 'Asset has cross-referenced URLs and needs updating')
-    logger.trace({ asset }, 'Original asset')
+  let updatedLocales = rewriteAssetUrls(asset, logger)
+
+  if (updatedLocales.length > 0) {
+    let didUnarchive = false
+    if (asset.isArchived()) {
+      if (!processArchived) {
+        logger.info('Asset archived, not updating (set --process-archived to process these assets)')
+        return 'no-change'
+      }
+      logger.debug('Unarchiving asset')
+      asset = dryRun ? asset : await withTries(2, () => asset.unarchive())
+      didUnarchive = true
+    }
+
+    const publishAfterUpdate = asset.isPublished() && (forceRepublish || !asset.isUpdated())
 
     result = 'updated-only'
+
+    logger.info({ updatedLocales, publishAfterUpdate, didUnarchive }, 'Fixing asset cross-references')
+
+    logger.debug({ updatedLocales }, 'Updating asset with new URLs')
     asset = dryRun ? asset : await withTries(2, () => asset.update())
-    logger.debug('Updating draft asset complete')
-    logger.trace({ asset }, 'Updated asset')
+    logger.trace({ asset }, 'Update asset output')
 
     for (const locale of updatedLocales) {
       logger.debug({ locale }, 'Processing locale')
-      // Grabbing the new asset is necessary for publishing later
       asset = dryRun ? asset : await withTries(2, () => asset.processForLocale(locale))
-      logger.debug({ locale }, 'Processing locale complete')
       logger.trace({ asset }, 'Process locale output')
     }
 
     if (publishAfterUpdate) {
       result = 'updated-and-published'
+
       logger.debug('Publishing updated asset')
       asset = dryRun ? asset : await withTries(2, () => asset.publish())
-      logger.debug('Publishing asset complete')
       logger.trace({ asset }, 'Publish asset output')
-    } else {
-      logger.debug('Not publishing asset that has other unpublished changes')
+    }
+
+    if (didUnarchive) {
+      logger.debug('Rearchiving asset')
+      asset = dryRun ? asset : await withTries(2, () => asset.archive())
     }
   } else {
-    logger.info('Asset in correct state, update not required')
-    logger.trace({ asset }, 'Original asset')
+    logger.info('Asset has no cross-references, update not required')
   }
   return result
 }
@@ -127,20 +134,25 @@ export async function processEnvironmentAssets({
 
   for await (let asset of iteratePaginated(environment, 'getAssets')) {
     await withTries(opts.processingAttempts, async n => {
-      const assetId = asset.sys.id
-      if (n > 1) {
-        // Reload the asset on retries
-        asset = await environment.getAsset(assetId)
-      }
       const assetLogger = logger.child({ assetId: asset.sys.id })
-      const assetResult = await processAsset({ asset, opts, logger: assetLogger })
-      switch (assetResult) {
-        case 'no-change':
-          result.checked.push(assetId)
-        case 'updated-only':
-          result.updated.push(assetId)
-        case 'updated-and-published':
-          result.published.push(assetId)
+      try {
+        const assetId = asset.sys.id
+        if (n > 1) {
+          // Reload the asset on retries
+          asset = await environment.getAsset(assetId)
+        }
+        const assetResult = await processAsset({ asset, opts, logger: assetLogger })
+        switch (assetResult) {
+          case 'no-change':
+            result.checked.push(assetId)
+          case 'updated-only':
+            result.updated.push(assetId)
+          case 'updated-and-published':
+            result.published.push(assetId)
+        }
+      } catch(err) {
+        assetLogger.error({ err }, 'Error processing asset')
+        throw err
       }
     })
     cancelToken.throwIfCancelled()

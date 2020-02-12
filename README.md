@@ -2,13 +2,20 @@
 
 ## Purpose
 
-Contentful previously allowed asset URLs to cross-reference other assets. This
-is no longer permissible going forward. All existing spaces have been allowed
-to continue cross-referencing assets for a transition period.
-
 This tool exists to automate the task of updating all assets in a space (or
 spaces) to ensure that they are not cross-referencing other assets or other
 spaces.
+
+### Why Is This Needed?
+
+Contentful previously allowed assets to use URLs from other assets within the
+same space, or within other spaces altogether. We call these "asset
+cross-references". Most spaces never had asset cross-references, and are no
+longer able to create them. However, there are existing spaces that need
+to reprocess their assets so that there are no longer any asset cross-references.
+
+We're providing this tool so that users may reprocess their assets themselves
+with minor effort.
 
 ## Requirements
 
@@ -19,7 +26,7 @@ $ node --version
 v12.14.1
 ```
 
-If you have an older Node version, you will need to
+If you have an older Node version (Node 9 or below), you will need to
 [install a later version](https://nodejs.org/en/).
 
 ## Installation & Basic Setup
@@ -40,6 +47,8 @@ able to run:
 $ contentful-fix-asset-cross-refs <options>
 ```
 
+See below for a full list of options.
+
 
 ### Option 2: Clone And Build
 
@@ -57,6 +66,8 @@ Then run:
 $ bin/fix-asset-cross-refs <options>
 ```
 
+See below for a full list of options.
+
 ### Option 3: Using `npx`
 
 The easiest way if you have a relatively modern version of `npm`, but not so
@@ -67,13 +78,15 @@ times:
 $ npx github:contentful-labs/contentful-fix-asset-cross-refs <options>
 ```
 
+See below for a full list of options.
+
 ## Usage
 
 Quick start:
 
 First, fetch an existing CMA access token, or create a new one. (You can go to
 [the Contentful web app](https://app.contentful.com) and go to `Settings` ->
-`API Keys` -> `Content management tokens` to create a new token.)
+`API Keys` -> `Content management tokens` to create a new CMA token.)
 
 Then, run the tool:
 
@@ -84,21 +97,20 @@ $ contentful-fix-asset-cross-refs \
     --all-environments \
     --dry-run `# Remove after verifying output looks sane` \
     -v        `# enable verbose output if you like` \
-    | tee capture-output.json
+    | tee fix-cross-refs.log
 ```
 
-We **strongly recommend** redirecting or `tee`ing the tool output to a file so
-you can inspect it later. If any serious errors (failure to update, failure to
-process an asset, or failure to publish) are encountered during processing, the
-program will immediately stop.
+We **strongly recommend** redirecting or `tee`ing the tool output to a file
+so you can inspect it later. If any serious errors (failure to update an
+asset, failure to process an asset URL, or failure to publish an asset) are
+encountered during processing, the program will immediately stop.
 
 Once you are satisfied that the operations look sane, you can remove the
 `--dry-run` flag.
 
 **NOTE:** If other users are concurrently modifying your assets, this utility
 is likely to fail with a version mismatch. Please run this tool during a quiet
-period to prevent any problems; it does not have retry logic for version
-mismatches.
+period to prevent any problems; the tool has limited retry functionality.
 
 ### Options
 
@@ -113,6 +125,7 @@ The tool accepts a variety of flags:
 | `--all-environments` | alternately, process all environments in the specified spaces |
 | `--force-republish` | publishes assets after updating even if they've otherwise drifted from the published version |
 | `--dry-run` | if set, won't actually perform any work, will merely pretend |
+| `--no-process-archived` | if set, archived assets with cross-references won't be processed |
 | `--verbose` or `-v` | increase the logging verbosity (can be used up to two times) |
 
 Additionally,
@@ -137,9 +150,8 @@ running with `-v` or `-vv`.
 **Be careful with this flag.**
 
 This tool will automatically republish assets after modifying them *if and only
-if* that asset has no other pending changes than fixing the asset
-cross-references. Otherwise, those assets are fixed, but left in a draft
-state.
+if* that asset has no other pending changes. If any other changes are detected,
+those assets have their URLs fixed, but are left in an draft state.
 
 If you'd like to force-republish all assets regardless of whether other changes
 are pending, you can use the `--force-republish` flag. **This might publish
@@ -160,3 +172,15 @@ $ npm i -g pino-pretty
 $ contentful-fix-asset-cross-refs <options> | pino-pretty
 ... prettier log output! ...
 ```
+
+### Caveats
+
+This tool only checks the most recent versions of assets from the CMA. It does
+not check currently-published from the CDA. Practically, this means that if
+you have an asset that:
+
+1. Has a cross-reference in its published version, and
+2. Has had the cross-references already fixed in its most current draft state
+
+Then this tool will not find and fix those assets. We suppose this is a fairly
+uncommon edge-case, which is why the tool does not handle this case.

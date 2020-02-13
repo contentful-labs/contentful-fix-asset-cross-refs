@@ -36,8 +36,17 @@ const yargsInst = yargs
     type: 'boolean',
     conflicts: 'environments',
   })
+  .check(argv => {
+    if (!argv.spaces?.length && !argv.allSpaces) {
+      throw new Error('Either --all-spaces must be set, or --spaces list must be provided')
+    }
+    if (!argv.environments?.length && !argv.allEnvironments) {
+      throw new Error('Either --all-environments must be set, or --environments list must be provided')
+    }
+    return true
+  })
   .option('force-republish', {
-    describe: 'force-republishes all modified assets, WARNING: even those that had previously unpublished changes',
+    describe: 'force-republishes all cross-referencing previously-published assets, WARNING: even those that had previously unpublished changes in the most recent draft',
     type: 'boolean',
     default: false
   })
@@ -52,19 +61,15 @@ const yargsInst = yargs
     }
     return true
   })
+  .option('process-archived', {
+    describe: 'whether to process (unarchive, process, rearchive) archived assets',
+    type: 'boolean',
+    default: true
+  })
   .option('dry-run', {
     describe: 'runs in dry-run mode (no changes will be made)',
     type: 'boolean',
     default: false
-  })
-  .check(argv => {
-    if (!argv.spaces?.length && !argv.allSpaces) {
-      throw new Error('Either --all-spaces must be set, or --spaces list must be provided')
-    }
-    if (!argv.environments?.length && !argv.allEnvironments) {
-      throw new Error('Either --all-environments must be set, or --environments list must be provided')
-    }
-    return true
   })
   .option('verbose', {
     describe: 'verbosity level (set more than once for more verbose)',
@@ -84,7 +89,10 @@ export async function run(argv = yargsInst.argv) {
     level: logLevel,
   }) // to stderr
 
-  const client = createCMAClient({ accessToken: argv.accessToken as string })
+  const client = createCMAClient({
+    accessToken: argv.accessToken as string,
+    application: 'fix-asset-cross-refs'
+  })
   const cancelToken = new CancellationToken()
 
   process.once('SIGTERM', () => cancelToken.cancel())
@@ -96,6 +104,7 @@ export async function run(argv = yargsInst.argv) {
       spaceIds: argv.spaces as string[] | undefined,
       envIds: argv.environments as string[] | undefined,
       opts: {
+        processArchived: argv.processArchived as boolean,
         processingAttempts: argv.processingAttmepts as number,
         forceRepublish: argv.forceRepublish as boolean,
         dryRun: argv.dryRun as boolean

@@ -61,10 +61,10 @@ const yargsInst = yargs
     }
     return true
   })
-  .option('process-archived', {
-    describe: 'whether to process (unarchive, process, rearchive) archived assets',
+  .option('skip-archived', {
+    describe: 'whether to skip processing archived assets',
     type: 'boolean',
-    default: true
+    default: false
   })
   .option('dry-run', {
     describe: 'runs in dry-run mode (no changes will be made)',
@@ -104,7 +104,7 @@ export async function run(argv = yargsInst.argv) {
       spaceIds: argv.spaces as string[] | undefined,
       envIds: argv.environments as string[] | undefined,
       opts: {
-        processArchived: argv.processArchived as boolean,
+        skipArchived: argv.skipArchived as boolean,
         processingAttempts: argv.processingAttmepts as number,
         forceRepublish: argv.forceRepublish as boolean,
         dryRun: argv.dryRun as boolean

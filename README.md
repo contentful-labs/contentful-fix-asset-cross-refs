@@ -125,7 +125,7 @@ The tool accepts a variety of flags:
 | `--all-environments` | alternately, process all environments in the specified spaces |
 | `--force-republish` | publishes assets after updating even if they've otherwise drifted from the published version |
 | `--dry-run` | if set, won't actually perform any work, will merely pretend |
-| `--no-process-archived` | if set, archived assets with cross-references won't be processed |
+| `--skip-archived` | if set, archived assets with cross-references won't be processed |
 | `--verbose` or `-v` | increase the logging verbosity (can be used up to two times) |
 
 Additionally,
@@ -158,6 +158,16 @@ are pending, you can use the `--force-republish` flag. **This might publish
 unintended changes, so be careful.**
 
 Assets that have never been published will never be published by this tool.
+
+#### `--skip-archived`
+
+In order to process archived assets, this tool must first unarchive (which turns
+them into drafts), process, and rearchive them. Some users may not want this for
+compliance or performance reasons. You may set the `--skip-archived` flag to
+avoid processing archived assets.
+
+Note: This may mean that, in the future, those assets will lose access to their
+image URLs. It is not recommended to set this flag without a good reason.
 
 ### Prettier Output
 

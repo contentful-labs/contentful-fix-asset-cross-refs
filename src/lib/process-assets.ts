@@ -49,7 +49,7 @@ export function rewriteAssetUrls(asset: Asset, logger: Logger): string[] {
 
 interface AssetProcessingOpts {
   processingAttempts: number
-  processArchived: boolean
+  skipArchived: boolean
   forceRepublish: boolean
   dryRun: boolean
 }
@@ -58,7 +58,7 @@ type ProcessResult = 'no-change' | 'updated-only' | 'updated-and-published'
 
 export async function processAsset({ asset, opts, logger }: { asset: Asset, opts: AssetProcessingOpts, logger: Logger }): Promise<ProcessResult> {
   logger.trace({ asset }, 'Processing asset')
-  const { dryRun, forceRepublish, processArchived } = opts
+  const { dryRun, forceRepublish, skipArchived } = opts
 
   let result: ProcessResult = 'no-change'
   let updatedLocales = rewriteAssetUrls(asset, logger)
@@ -66,37 +66,44 @@ export async function processAsset({ asset, opts, logger }: { asset: Asset, opts
   if (updatedLocales.length > 0) {
     let didUnarchive = false
     if (asset.isArchived()) {
-      if (!processArchived) {
-        logger.info('Asset archived, not updating (set --process-archived to process these assets)')
+      if (skipArchived) {
+        logger.info('Asset archived and skip-archived set, not updating')
         return 'no-change'
       }
       logger.debug('Unarchiving asset')
       asset = dryRun ? asset : await withTries(2, () => asset.unarchive())
+      logger.trace({ asset }, 'Unarchive asset output')
+      // Need to reprocess the resulting asset
+      updatedLocales = rewriteAssetUrls(asset, logger)
       didUnarchive = true
     }
 
-    const publishAfterUpdate = asset.isPublished() && (forceRepublish || !asset.isUpdated())
+    if (updatedLocales.length > 0) {
+      const publishAfterUpdate = asset.isPublished() && (forceRepublish || !asset.isUpdated())
 
-    result = 'updated-only'
+      result = 'updated-only'
 
-    logger.info({ updatedLocales, publishAfterUpdate, didUnarchive }, 'Fixing asset cross-references')
+      logger.info({ updatedLocales, publishAfterUpdate, didUnarchive }, 'Fixing asset cross-references')
 
-    logger.debug({ updatedLocales }, 'Updating asset with new URLs')
-    asset = dryRun ? asset : await withTries(2, () => asset.update())
-    logger.trace({ asset }, 'Update asset output')
+      logger.debug({ updatedLocales }, 'Updating asset with new URLs')
+      asset = dryRun ? asset : await withTries(2, () => asset.update())
+      logger.trace({ asset }, 'Update asset output')
 
-    for (const locale of updatedLocales) {
-      logger.debug({ locale }, 'Processing locale')
-      asset = dryRun ? asset : await withTries(2, () => asset.processForLocale(locale))
-      logger.trace({ asset }, 'Process locale output')
-    }
+      for (const locale of updatedLocales) {
+        logger.debug({ locale }, 'Processing locale')
+        asset = dryRun ? asset : await withTries(2, () => asset.processForLocale(locale))
+        logger.trace({ asset }, 'Process locale output')
+      }
 
-    if (publishAfterUpdate) {
-      result = 'updated-and-published'
+      if (publishAfterUpdate) {
+        result = 'updated-and-published'
 
-      logger.debug('Publishing updated asset')
-      asset = dryRun ? asset : await withTries(2, () => asset.publish())
-      logger.trace({ asset }, 'Publish asset output')
+        logger.debug('Publishing updated asset')
+        asset = dryRun ? asset : await withTries(2, () => asset.publish())
+        logger.trace({ asset }, 'Publish asset output')
+      }
+    } else {
+      logger.warn('Unexpected: Asset needs no update after unarchiving?')
     }
 
     if (didUnarchive) {

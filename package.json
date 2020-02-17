@@ -11,8 +11,10 @@
   "devDependencies": {
     "@types/node": "^13.7.0",
     "@types/pino": "^5.15.4",
+    "@types/rfdc": "^1.1.0",
     "@types/yargs": "^15.0.3",
     "ava": "^3.2.0",
+    "rfdc": "^1.1.4",
     "ts-node": "^8.6.2",
     "typescript": "^3.7.5"
   },

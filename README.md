@@ -110,7 +110,8 @@ Once you are satisfied that the operations look sane, you can remove the
 
 **NOTE:** If other users are concurrently modifying your assets, this utility
 is likely to fail with a version mismatch. Please run this tool during a quiet
-period to prevent any problems; the tool has limited retry functionality.
+period to reduce any conflicts. If this tool cannot safely update an asset
+because it has been modified simultaneously by someone else, it will stop.
 
 ### Options
 
